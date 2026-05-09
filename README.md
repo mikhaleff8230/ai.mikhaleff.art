@@ -2,6 +2,8 @@
 
 Vite + React + Tailwind лендинг с Sanity CMS и i18n (RU/EN).
 
+**Полная пошаговая инструкция (локально, Sanity, Vercel, Git, токены, CORS):** [SETUP.md](./SETUP.md)
+
 ## Структура
 
 ```
