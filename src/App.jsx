@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLandingContent } from "./hooks/useLandingContent";
 import { onAnchorClick, smoothScrollToHash } from "./utils/smoothScroll.js";
+import PortraitCard from "./components/PortraitCard.jsx";
 
 const pick = (value, lang) => {
   if (!value) return "";
@@ -225,14 +226,10 @@ export default function App() {
               <p className="text-[11px] uppercase tracking-[0.24em] text-zinc-500">{tx(page.hero?.portrait)}</p>
               <span className="grid h-7 w-7 place-items-center rounded-full bg-[#1c2317] text-neon">✺</span>
             </div>
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#080808] shadow-[0_24px_60px_rgba(0,0,0,.45)]">
-              <img
-                src={page.hero?.portraitImage || "/profile-photo.png"}
-                alt="Alex portrait"
-                className="h-[420px] w-full object-cover object-center"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_75%_at_100%_0%,rgba(201,255,56,0.16),transparent_58%),linear-gradient(to_top,rgba(5,8,13,0.3),transparent_52%)]" />
-            </div>
+            <PortraitCard
+              image={page.hero?.portraitImage || "/profile-photo.png"}
+              video="/real.mp4"
+            />
           </div>
         </section>
 
