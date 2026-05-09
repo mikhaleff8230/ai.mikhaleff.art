@@ -5,19 +5,53 @@ export default {
   fields: [
     {
       name: "title",
-      title: "Title",
+      title: "Название",
       type: "string",
       validation: (Rule) => Rule.required()
     },
-    { name: "year", title: "Year", type: "string" },
+    { name: "year", title: "Год", type: "string" },
+    {
+      name: "image",
+      title: "Обложка проекта",
+      description: "Загрузите файл (JPG, PNG, WebP). Можно заменить или удалить — кнопка корзины в превью.",
+      type: "image",
+      options: {
+        hotspot: true,
+        accept: "image/*",
+        metadata: ["blurhash", "lqip", "palette"]
+      },
+      fields: [
+        {
+          name: "alt",
+          type: "string",
+          title: "Alt-текст (доступность)",
+          description: "Кратко опишите изображение для скринридеров."
+        }
+      ],
+      validation: (Rule) =>
+        Rule.custom((image, context) => {
+          const legacyUrl = context.document?.imageUrl;
+          if (!image?.asset && !legacyUrl) {
+            return "Загрузите обложку проекта (файл)";
+          }
+          return true;
+        })
+    },
+    {
+      name: "imageUrl",
+      title: "URL обложки (устарело)",
+      type: "url",
+      hidden: true,
+      description: "Скрыто: осталось от первого импорта. Загрузите файл в «Обложка проекта» — URL больше не нужен."
+    },
     {
       name: "description",
-      title: "Description",
+      title: "Описание",
       type: "localeText"
     },
     {
       name: "category",
-      title: "Filter category",
+      title: "Категория фильтра",
       description: "Должна совпадать с одним из id фильтров на лендинге (UI/UX, Web, Branding, Mobile).",
       type: "string",
       options: {
@@ -33,41 +67,29 @@ export default {
     },
     {
       name: "tags",
-      title: "Extra tags (badges)",
-      description: "Дополнительные подписи под карточкой, например WEB APP, FINTECH.",
+      title: "Доп. теги",
+      description: "Подписи под карточкой: WEB APP, FINTECH и т.д.",
       type: "array",
       of: [{ type: "string" }]
     },
     {
-      name: "image",
-      title: "Cover image",
-      type: "image",
-      options: { hotspot: true }
-    },
-    {
-      name: "imageUrl",
-      title: "Cover image URL (fallback)",
-      description: "Используется только если не загружено изображение выше.",
-      type: "url"
-    },
-    {
       name: "link",
-      title: "Project link",
-      description: "Ссылка на сайт/кейс. Если задана, карточка станет кликабельной.",
+      title: "Ссылка на проект",
+      description: "Внешняя ссылка на кейс. Если задана — карточка кликабельна.",
       type: "url",
       validation: (Rule) =>
-        Rule.uri({ allowRelative: false, scheme: ["http", "https"] })
+        Rule.uri({ allowRelative: false, scheme: ["http", "https"] }).allow("")
     },
     {
       name: "order",
-      title: "Sort order",
-      description: "Чем меньше число, тем выше карточка. Если оставить пустым — встанет в конец.",
+      title: "Порядок сортировки",
+      description: "Чем меньше число, тем выше карточка. Пусто — в конец по дате.",
       type: "number"
     }
   ],
   orderings: [
     {
-      title: "Default (custom order, newest last)",
+      title: "По порядку (новые внизу)",
       name: "default",
       by: [
         { field: "order", direction: "asc" },
@@ -75,7 +97,7 @@ export default {
       ]
     },
     {
-      title: "Newest first",
+      title: "Сначала новые",
       name: "newest",
       by: [{ field: "_createdAt", direction: "desc" }]
     }
