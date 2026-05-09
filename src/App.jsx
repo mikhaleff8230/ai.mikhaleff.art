@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLandingContent } from "./hooks/useLandingContent";
+import { onAnchorClick, smoothScrollToHash } from "./utils/smoothScroll.js";
 
 const pick = (value, lang) => {
   if (!value) return "";
@@ -23,6 +24,67 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [lang, setLang] = useState("ru");
 
+  const [form, setForm] = useState({ name: "", email: "", details: "" });
+  const [status, setStatus] = useState("idle");
+
+  useEffect(() => {
+    const h = window.location.hash;
+    if (h && h.length > 1) {
+      requestAnimationFrame(() => smoothScrollToHash(h));
+    }
+  }, []);
+
+  const tgToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+  const tgChatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+
+  const handleField = (key) => (e) =>
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (status === "sending") return;
+    if (!tgToken || !tgChatId) {
+      console.warn(
+        "Telegram credentials are not set. Add VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID to .env"
+      );
+      setStatus("error");
+      return;
+    }
+    setStatus("sending");
+    const text = [
+      "📩 Новая заявка с лендинга",
+      `Имя: ${form.name || "—"}`,
+      `Email: ${form.email || "—"}`,
+      "",
+      "Сообщение:",
+      form.details || "—"
+    ].join("\n");
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: tgChatId,
+          text,
+          disable_web_page_preview: true
+        })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.description || "Send failed");
+      setStatus("sent");
+      setForm({ name: "", email: "", details: "" });
+    } catch (err) {
+      console.error("Telegram send failed:", err);
+      setStatus("error");
+    }
+  }
+
+  const statusText = {
+    sending: lang === "ru" ? "Отправляем…" : "Sending…",
+    sent: lang === "ru" ? "Сообщение отправлено!" : "Message sent!",
+    error: lang === "ru" ? "Не удалось отправить. Напишите в WhatsApp." : "Send failed. Please WhatsApp instead."
+  };
+
   const whatsappUrl = `https://wa.me/${(settings.whatsappNumber || "").replace(/\D/g, "")}`;
 
   const filteredProjects = useMemo(() => {
@@ -37,31 +99,47 @@ export default function App() {
   const tx = (v) => pick(v, lang);
 
   return (
-    <main id="top" className="page-bg min-h-screen bg-[#050505] text-white">
-      <div className="mx-auto w-full max-w-[1380px] px-4 py-5 md:px-10 lg:px-12">
-        <header className="mb-8 flex items-center justify-between">
+    <main id="top" className="page-bg min-h-screen bg-black text-white">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-black/40">
+        <div className="mx-auto flex w-full max-w-[1380px] items-center justify-between gap-4 px-4 py-3 md:px-10 md:py-4 lg:px-12">
           <div className="flex items-center gap-2 text-sm">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-[#192312] text-[10px] font-semibold text-neon">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-[#192312] text-[20px] font-semibold leading-none text-neon">
               {settings.logo}
             </span>
             <span className="text-zinc-300">{settings.logoText}</span>
           </div>
-          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-[#0e1117] p-1 md:flex">
-            <a href="#top" className="rounded-full bg-neon px-4 py-2 text-sm text-black">
+          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-black/40 p-1 backdrop-blur-md md:flex">
+            <a
+              href="#top"
+              onClick={(e) => onAnchorClick(e, "#top")}
+              className="nav-link rounded-full bg-neon px-4 py-2 text-black"
+            >
               {tx(settings.nav?.home)}
             </a>
-            <a href="#work" className="rounded-full px-4 py-2 text-sm text-zinc-300 hover:text-white">
+            <a
+              href="#work"
+              onClick={(e) => onAnchorClick(e, "#work")}
+              className="nav-link rounded-full px-4 py-2 text-zinc-300 hover:text-white"
+            >
               {tx(settings.nav?.work)}
             </a>
-            <a href="#services" className="rounded-full px-4 py-2 text-sm text-zinc-300 hover:text-white">
+            <a
+              href="#services"
+              onClick={(e) => onAnchorClick(e, "#services")}
+              className="nav-link rounded-full px-4 py-2 text-zinc-300 hover:text-white"
+            >
               {tx(settings.nav?.services)}
             </a>
-            <a href="#contact" className="rounded-full px-4 py-2 text-sm text-zinc-300 hover:text-white">
+            <a
+              href="#contact"
+              onClick={(e) => onAnchorClick(e, "#contact")}
+              className="nav-link rounded-full px-4 py-2 text-zinc-300 hover:text-white"
+            >
               {tx(settings.nav?.contact)}
             </a>
           </nav>
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center rounded-full border border-white/10 bg-[#0f131b] p-1">
+            <div className="flex items-center rounded-full border border-white/10 bg-black/40 p-1 backdrop-blur-md">
               <button
                 type="button"
                 onClick={() => setLang("ru")}
@@ -88,7 +166,7 @@ export default function App() {
               target="_blank"
               rel="noreferrer"
               aria-label="WhatsApp"
-              className="grid h-12 w-12 place-items-center rounded-full bg-[#22C55E] text-white shadow-[0_6px_18px_rgba(34,197,94,.35)] transition duration-200 hover:scale-[1.03]"
+              className="grid h-11 w-11 place-items-center rounded-full bg-[#22C55E] text-white shadow-[0_6px_18px_rgba(34,197,94,.35)] transition duration-200 hover:scale-[1.03]"
             >
               <WhatsAppIcon />
             </a>
@@ -96,26 +174,28 @@ export default function App() {
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="pill-hover-ring group flex items-center gap-2 rounded-full bg-neon px-6 py-2.5 text-sm font-semibold leading-none text-black hover:scale-[1.02]"
+              className="pill-hover-ring group hidden items-center gap-2 rounded-full bg-neon px-5 py-2.5 text-sm font-semibold leading-none text-black hover:scale-[1.02] sm:flex"
             >
               <span>{tx(settings.hireMe)}</span>
               <span className="grid h-5 w-5 place-items-center rounded-full bg-black text-[11px] text-neon transition duration-200 group-hover:translate-x-0.5">↗</span>
             </a>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <section className="relative grid min-h-[520px] gap-5 overflow-hidden rounded-[28px] border border-white/10 bg-[#0f1219] p-6 md:grid-cols-[1.15fr_0.85fr] md:p-9">
+      <div className="mx-auto w-full max-w-[1380px] px-4 pt-6 md:px-10 md:pt-10 lg:px-12">
+        <section className="relative grid min-h-[520px] gap-5 overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0a0a] p-6 md:grid-cols-[1.15fr_0.85fr] md:p-9">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(520px_300px_at_0%_0%,rgba(201,255,56,0.24),transparent_60%),radial-gradient(520px_320px_at_100%_100%,rgba(201,255,56,0.22),transparent_62%),radial-gradient(500px_300px_at_100%_0%,rgba(201,255,56,0.08),transparent_72%),radial-gradient(480px_260px_at_0%_100%,rgba(201,255,56,0.07),transparent_74%)]" />
           <div className="relative z-10 md:pt-5">
             <span className="inline-flex rounded-full border border-white/10 bg-[#111610] px-3 py-1 text-xs text-zinc-300">
               {tx(page.hero?.badge)}
             </span>
-            <h1 className="mt-6 text-5xl font-semibold leading-[0.96] md:text-[78px]">
+            <h1 className="mt-6 text-[44px] font-semibold leading-[0.94] tracking-[-0.02em] md:text-[84px]">
               {tx(page.hero?.title1)}
               <br />
               {tx(page.hero?.title2)}<span className="text-neon">..</span>
             </h1>
-            <p className="mt-5 max-w-[620px] text-xl leading-relaxed text-zinc-300">
+            <p className="mt-6 max-w-[620px] text-[18px] leading-[1.55] text-zinc-300 md:text-[20px]">
               {tx(page.hero?.subtitle)}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -127,21 +207,25 @@ export default function App() {
               >
                 {tx(page.hero?.cta1)}
               </a>
-              <a href="#work" className="rounded-full border border-white/10 bg-[#12161f] px-5 py-2.5 text-sm text-zinc-200">
+              <a
+                href="#work"
+                onClick={(e) => onAnchorClick(e, "#work")}
+                className="rounded-full border border-white/10 bg-[#111111] px-5 py-2.5 text-sm text-zinc-200"
+              >
                 {tx(page.hero?.cta2)}
               </a>
             </div>
             <div className="mt-8 flex flex-wrap gap-2 text-[11px] text-zinc-300">
-              <span className="rounded-full border border-white/10 bg-[#11161f] px-3 py-1">{tx(page.hero?.badge1)}</span>
-              <span className="rounded-full border border-white/10 bg-[#11161f] px-3 py-1">{tx(page.hero?.badge2)}</span>
+              <span className="rounded-full border border-white/10 bg-[#111111] px-3 py-1">{tx(page.hero?.badge1)}</span>
+              <span className="rounded-full border border-white/10 bg-[#111111] px-3 py-1">{tx(page.hero?.badge2)}</span>
             </div>
           </div>
-          <div className="relative z-10 my-auto rounded-2xl border border-white/10 bg-[#12161f] p-5">
+          <div className="relative z-10 my-auto rounded-2xl border border-white/10 bg-[#111111] p-5">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-[11px] uppercase tracking-[0.24em] text-zinc-500">{tx(page.hero?.portrait)}</p>
               <span className="grid h-7 w-7 place-items-center rounded-full bg-[#1c2317] text-neon">✺</span>
             </div>
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0d1016] shadow-[0_24px_60px_rgba(0,0,0,.45)]">
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#080808] shadow-[0_24px_60px_rgba(0,0,0,.45)]">
               <img
                 src={page.hero?.portraitImage || "/profile-photo.png"}
                 alt="Alex portrait"
@@ -184,7 +268,7 @@ export default function App() {
                   className={`rounded-full px-4 py-2 text-xs transition duration-200 ${
                     isActive
                       ? "bg-neon text-black"
-                      : "bg-[#12161f] text-zinc-300 hover:bg-[#171c27] hover:text-white"
+                      : "bg-[#111111] text-zinc-300 hover:bg-[#1a1a1a] hover:text-white"
                   }`}
                 >
                   {tx(f.label)}
@@ -194,7 +278,7 @@ export default function App() {
           </div>
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {filteredProjects.length === 0 && (
-              <p className="col-span-full rounded-2xl border border-dashed border-white/10 bg-[#0f1219] p-8 text-center text-sm text-zinc-400">
+              <p className="col-span-full rounded-2xl border border-dashed border-white/10 bg-[#0a0a0a] p-8 text-center text-sm text-zinc-400">
                 {tx(page.workSection?.empty)}
               </p>
             )}
@@ -208,7 +292,7 @@ export default function App() {
                 <Wrapper
                   key={item._id || item.title}
                   {...wrapperProps}
-                  className="group block overflow-hidden rounded-[22px] border border-white/10 bg-[#0f1219] transition hover:-translate-y-1 hover:shadow-card"
+                  className="group block overflow-hidden rounded-[22px] border border-white/10 bg-[#0a0a0a] transition duration-200 hover:-translate-y-1 hover:border-neon hover:shadow-[0_0_0_1px_rgba(201,255,56,.55),0_22px_48px_rgba(201,255,56,.14)]"
                 >
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
@@ -219,14 +303,22 @@ export default function App() {
                     <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-1 text-[11px]">
                       {item.year}
                     </span>
-                    {item.link && (
-                      <span className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-neon text-black opacity-0 transition group-hover:opacity-100">
-                        ↗
-                      </span>
-                    )}
+                    <span
+                      aria-hidden="true"
+                      className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-neon text-black text-base font-medium opacity-0 shadow-[0_0_0_5px_rgba(201,255,56,0.4),0_8px_24px_rgba(201,255,56,0.25)] transition duration-200 group-hover:opacity-100 group-hover:scale-110"
+                    >
+                      ↗
+                    </span>
                   </div>
                   <div className="p-4">
-                    <h3 className="text-[34px] font-semibold leading-tight">{item.title}</h3>
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-[34px] font-semibold leading-tight">{item.title}</h3>
+                      {item.link && (
+                        <span className="mt-2 shrink-0 text-base text-zinc-400 transition duration-200 group-hover:text-neon">
+                          ↗
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-2 text-sm text-zinc-400">{tx(item.description)}</p>
                     {badges.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -263,8 +355,16 @@ export default function App() {
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-4">
             {services.map((s) => (
-              <article key={s._id || s.idx} className="rounded-2xl border border-white/10 bg-[#0f1219] p-5">
-                <p className="text-xs text-zinc-500">{s.idx}</p>
+              <article
+                key={s._id || s.idx}
+                className="group relative rounded-2xl border border-white/10 bg-[#0a0a0a] p-5 transition duration-200 hover:-translate-y-0.5 hover:border-neon hover:shadow-[0_0_0_1px_rgba(201,255,56,.55),0_18px_38px_rgba(201,255,56,.12)]"
+              >
+                <div className="flex items-start justify-between">
+                  <p className="text-xs text-zinc-500">{s.idx}</p>
+                  <span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-[#111111] text-[12px] text-zinc-400 transition duration-200 group-hover:border-neon group-hover:bg-neon group-hover:text-black">
+                    ↗
+                  </span>
+                </div>
                 <h4 className="mt-4 text-xl font-medium">{tx(s.title)}</h4>
                 <p className="mt-2 text-sm text-zinc-400">{tx(s.text)}</p>
               </article>
@@ -272,7 +372,7 @@ export default function App() {
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {testimonials.map((t) => (
-              <article key={t._id} className="rounded-2xl border border-white/10 bg-[#0f1219] p-5">
+              <article key={t._id} className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
                 <p className="text-zinc-200">{tx(t.quote)}</p>
                 <p className="mt-4 text-sm text-zinc-400">{tx(t.author)}</p>
               </article>
@@ -280,7 +380,7 @@ export default function App() {
           </div>
         </section>
 
-        <section id="contact" className="scroll-mt-24 grid gap-6 rounded-[28px] border border-white/10 bg-gradient-to-r from-[#10141d] to-[#1c2a0f]/45 p-6 md:grid-cols-2 md:p-8">
+        <section id="contact" className="scroll-mt-24 grid gap-6 rounded-[28px] border border-white/10 bg-gradient-to-r from-[#0a0a0a] to-[#1c2a0f]/45 p-6 md:grid-cols-2 md:p-8">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-neon">{tx(page.contactSection?.eyebrow)}</p>
             <h2 className="mt-2 text-4xl font-semibold leading-tight md:text-5xl">
@@ -294,14 +394,51 @@ export default function App() {
               <p>{tx(settings.city)}</p>
             </div>
           </div>
-          <form className="rounded-2xl border border-white/10 bg-[#12161f] p-4">
+          <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-[#111111] p-4">
             <label className="mb-2 block text-xs uppercase tracking-[0.15em] text-zinc-500">{tx(page.contactSection?.formName)}</label>
-            <input placeholder={tx(page.contactSection?.formName)} className="mb-3 w-full rounded-xl border border-white/10 bg-[#0d1016] px-4 py-3 text-sm outline-none" />
+            <input
+              required
+              value={form.name}
+              onChange={handleField("name")}
+              placeholder={tx(page.contactSection?.formName)}
+              className="mb-3 w-full rounded-xl border border-white/10 bg-[#080808] px-4 py-3 text-sm outline-none focus:border-neon/50"
+            />
             <label className="mb-2 block text-xs uppercase tracking-[0.15em] text-zinc-500">{tx(page.contactSection?.formEmail)}</label>
-            <input placeholder={tx(page.contactSection?.formEmail)} className="mb-3 w-full rounded-xl border border-white/10 bg-[#0d1016] px-4 py-3 text-sm outline-none" />
+            <input
+              required
+              type="email"
+              value={form.email}
+              onChange={handleField("email")}
+              placeholder={tx(page.contactSection?.formEmail)}
+              className="mb-3 w-full rounded-xl border border-white/10 bg-[#080808] px-4 py-3 text-sm outline-none focus:border-neon/50"
+            />
             <label className="mb-2 block text-xs uppercase tracking-[0.15em] text-zinc-500">{tx(page.contactSection?.formDetails)}</label>
-            <textarea placeholder={tx(page.contactSection?.formDetailsPh)} className="mb-4 h-24 w-full rounded-xl border border-white/10 bg-[#0d1016] px-4 py-3 text-sm outline-none" />
-            <button className="pill-hover-ring rounded-full bg-neon px-5 py-2.5 text-sm font-medium text-black">{tx(page.contactSection?.formSubmit)}</button>
+            <textarea
+              required
+              value={form.details}
+              onChange={handleField("details")}
+              placeholder={tx(page.contactSection?.formDetailsPh)}
+              className="mb-4 h-24 w-full rounded-xl border border-white/10 bg-[#080808] px-4 py-3 text-sm outline-none focus:border-neon/50"
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                disabled={status === "sending"}
+                className="pill-hover-ring rounded-full bg-neon px-5 py-2.5 text-sm font-medium text-black disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {status === "sending"
+                  ? statusText.sending
+                  : status === "sent"
+                    ? statusText.sent
+                    : tx(page.contactSection?.formSubmit)}
+              </button>
+              {status === "error" && (
+                <span className="text-xs text-red-400">{statusText.error}</span>
+              )}
+              {status === "sent" && (
+                <span className="text-xs text-neon">✓</span>
+              )}
+            </div>
           </form>
         </section>
 
@@ -313,15 +450,29 @@ export default function App() {
                 <br />
                 <span className="text-neon">{tx(settings.footer?.ctaLine2)}</span>
               </p>
-              <a href="#contact" className="pill-hover-ring mt-4 inline-block rounded-full bg-neon px-4 py-2 text-sm text-black">{tx(settings.footer?.ctaButton)}</a>
+              <a
+                href="#contact"
+                onClick={(e) => onAnchorClick(e, "#contact")}
+                className="pill-hover-ring mt-4 inline-block rounded-full bg-neon px-4 py-2 text-sm text-black"
+              >
+                {tx(settings.footer?.ctaButton)}
+              </a>
             </div>
             <div className="text-sm text-zinc-300">
               <p className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-500">{tx(settings.footer?.sitemap)}</p>
               <div className="space-y-1">
-                <a href="#top" className="block hover:text-white">{tx(settings.nav?.home)}</a>
-                <a href="#work" className="block hover:text-white">{tx(settings.nav?.work)}</a>
-                <a href="#services" className="block hover:text-white">{tx(settings.nav?.services)}</a>
-                <a href="#contact" className="block hover:text-white">{tx(settings.nav?.contact)}</a>
+                <a href="#top" onClick={(e) => onAnchorClick(e, "#top")} className="block hover:text-white">
+                  {tx(settings.nav?.home)}
+                </a>
+                <a href="#work" onClick={(e) => onAnchorClick(e, "#work")} className="block hover:text-white">
+                  {tx(settings.nav?.work)}
+                </a>
+                <a href="#services" onClick={(e) => onAnchorClick(e, "#services")} className="block hover:text-white">
+                  {tx(settings.nav?.services)}
+                </a>
+                <a href="#contact" onClick={(e) => onAnchorClick(e, "#contact")} className="block hover:text-white">
+                  {tx(settings.nav?.contact)}
+                </a>
               </div>
             </div>
             <div className="text-sm text-zinc-300">

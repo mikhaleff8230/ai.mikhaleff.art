@@ -76,6 +76,29 @@ git config core.sshCommand "ssh -i C:/Users/<YOU>/.ssh/id_ed25519_github_new -o 
 
 Проверка: `ssh -T git@github.com` должно ответить `Hi <username>!`.
 
+## Контактная форма → Telegram
+
+Форма из секции **Contact** отправляет заявку прямо в Telegram-чат через Bot API. Никакого бэкенда.
+
+1. В Telegram открой [@BotFather](https://t.me/BotFather) → `/newbot` → задай имя и username, получишь токен вида `123456789:AAE...`.
+2. Получи свой `chat_id`:
+   - Напиши новому боту любое сообщение (`/start`).
+   - Открой `https://api.telegram.org/bot<TOKEN>/getUpdates` в браузере.
+   - В ответе найди `"chat":{"id": ...}` — это нужный chat_id.
+   - Можно также отправить в чат [@userinfobot](https://t.me/userinfobot) — он сразу пришлёт твой id.
+3. Заполни в `.env`:
+
+```
+VITE_TELEGRAM_BOT_TOKEN=123456789:AAE...
+VITE_TELEGRAM_CHAT_ID=123456789
+```
+
+4. Перезапусти `npm run dev`. Заявка с формы прилетает в Telegram мгновенно.
+
+> Токен попадает в клиентский бандл — это ограничение «без бэкенда». Для контактной формы это допустимый риск (бот может отправлять только в твой `chat_id`). Если нужен серьёзнее уровень — делаем Vercel API + Resend.
+
+После деплоя на Vercel не забудь добавить эти же переменные в **Settings → Environment Variables** проекта.
+
 ## Деплой на Vercel
 
 ```bash
