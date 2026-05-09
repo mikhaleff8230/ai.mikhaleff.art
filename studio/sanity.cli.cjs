@@ -1,7 +1,0 @@
-/** @type {import('sanity/cli').CliConfig} */
-module.exports = {
-  api: {
-    projectId: process.env.SANITY_STUDIO_PROJECT_ID,
-    dataset: process.env.SANITY_STUDIO_DATASET || "production"
-  }
-};
