@@ -66,6 +66,16 @@ npm run push
 
 Ветку можно переопределить: `$env:GIT_BRANCH="main"; npm run ship` (PowerShell) или `GIT_BRANCH=main npm run ship` (bash).
 
+### SSH на Windows (если `git push` пишет `Permission denied` или `Host key verification failed`)
+
+Иногда Git подставляет «ломаный» путь к `~/.ssh`. Тогда в **этом** репозитории один раз задай явный ключ и `known_hosts` (подставь свой путь к файлу ключа, если он не `id_ed25519_github_new`):
+
+```powershell
+git config core.sshCommand "ssh -i C:/Users/<YOU>/.ssh/id_ed25519_github_new -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=C:/Users/<YOU>/.ssh/known_hosts"
+```
+
+Проверка: `ssh -T git@github.com` должно ответить `Hi <username>!`.
+
 ## Деплой на Vercel
 
 ```bash
