@@ -1,0 +1,26 @@
+{
+  "name": "client-entry-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "start": "sanity dev",
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "deploy-graphql": "sanity graphql deploy",
+    "seed": "node ./scripts/seed.mjs",
+    "login": "sanity login"
+  },
+  "dependencies": {
+    "@sanity/client": "^6.21.3",
+    "@sanity/vision": "^3.99.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sanity": "^3.99.0",
+    "styled-components": "^6.1.13"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
