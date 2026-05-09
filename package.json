@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "push": "git push -u origin main",
+    "push": "node scripts/git-push.mjs",
     "ship": "node scripts/git-ship.mjs"
   },
   "dependencies": {

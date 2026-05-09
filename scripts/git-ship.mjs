@@ -1,6 +1,8 @@
 import { execSync } from "node:child_process";
 
-const branch = process.env.GIT_BRANCH || "main";
+const branch =
+  process.env.GIT_BRANCH ||
+  output("git rev-parse --abbrev-ref HEAD");
 const msg =
   process.argv.slice(2).join(" ").trim() ||
   process.env.GIT_COMMIT_MSG ||

@@ -50,7 +50,7 @@ npm run deploy   # опубликовать Studio на *.sanity.studio
 npm run ship
 ```
 
-Скрипт делает `git add -A`, при наличии изменений — коммит с сообщением по умолчанию `chore: sync`, затем `git push -u origin main`.
+Скрипт делает `git add -A`, при наличии изменений — коммит с сообщением по умолчанию `chore: sync`, затем `git push -u origin` **на текущую ветку** (например `main`).
 
 Со своим сообщением:
 
@@ -64,7 +64,7 @@ npm run ship -- "feat: обновил hero"
 npm run push
 ```
 
-Ветку можно переопределить: `set GIT_BRANCH=develop` (Windows) или `GIT_BRANCH=develop npm run ship` (Unix).
+Ветку можно переопределить: `$env:GIT_BRANCH="main"; npm run ship` (PowerShell) или `GIT_BRANCH=main npm run ship` (bash).
 
 ## Деплой на Vercel
 
