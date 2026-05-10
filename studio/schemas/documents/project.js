@@ -78,7 +78,7 @@ export default {
       description: "Внешняя ссылка на кейс. Если задана — карточка кликабельна.",
       type: "url",
       validation: (Rule) =>
-        Rule.uri({ allowRelative: false, scheme: ["http", "https"] }).allow("")
+        Rule.uri({ allowRelative: false, scheme: ["http", "https"] })
     },
     {
       name: "order",
